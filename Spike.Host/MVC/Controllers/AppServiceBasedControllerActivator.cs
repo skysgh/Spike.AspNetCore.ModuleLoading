@@ -57,6 +57,7 @@ namespace App.Base.MVC.Controllers
                 try
                 {
                     httpController =
+                    // Go classic/non-DI first time?
                     Activator
                     .CreateInstance(controllerType);
 
@@ -66,8 +67,9 @@ namespace App.Base.MVC.Controllers
             {
                 // Try finding the DI scope associated to the 
                 // Controller:
-                ScopeDictionaryEntry scopeDictionaryEntry;
-                ScopeDictionary.Instance.TryGetValue(controllerType, out scopeDictionaryEntry);
+                ControllerToScopeDictionaryEntry scopeDictionaryEntry;
+
+                ControllerTypeToScopeDictionary.Instance.TryGetValue(controllerType, out scopeDictionaryEntry);
                 if (scopeDictionaryEntry == null)
                 {
                     return null;
@@ -76,6 +78,11 @@ namespace App.Base.MVC.Controllers
                 // we didn't replace ,we added...?
 
                 scopeDictionaryEntry
+                    // use the module specific autofac child scope
+                    // to instantiate new controller. 
+                    // will find module specific services for injection
+                    // and if not found, will look in original parent
+                    // one, finding all dependencies.
                     .Scope
                     .TryResolve(controllerType, out httpController);
 
@@ -85,6 +92,7 @@ namespace App.Base.MVC.Controllers
     
         public virtual void Release(ControllerContext context, object controller)
         {
+            // Not sure what to put here yet.
         }
     }
 }

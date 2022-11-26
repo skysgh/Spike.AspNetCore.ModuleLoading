@@ -8,8 +8,8 @@
     /// find the right DI scope to build a 
     /// late loaded controller.
     /// </summary>
-    public class ScopeDictionary : Dictionary<Type, ScopeDictionaryEntry>
+    public class ControllerTypeToScopeDictionary : Dictionary<Type, ControllerToScopeDictionaryEntry>
     {
-        static public ScopeDictionary Instance { get; private set; } = new ScopeDictionary();
+        static public ControllerTypeToScopeDictionary Instance { get; private set; } = new ControllerTypeToScopeDictionary();
     }
 }

@@ -52,6 +52,19 @@ https://localhost:7245/api/rest/base/v1/exampleh1
       Click <i>once</i> to late load a Module...then continue below...
     </a>
   </li>
+  <li>
+    What's happening behind the scenes is in
+    the implementation of
+    <code>IModuleLoadingService</code>
+    which is
+    <ul>
+      <li>creating a new <code>AppModuleLoadContext : AssemblyLoadContext</code> to load the module's assembly into,</li>
+      <li>creating a new <code>Autofac ILifetimeScope</code> to register new module Services/Controllers into,</li>
+      <li>recording info in a singleton <code>ControllerTypeToScopeDictionary</code> for use later</li>
+      <li>by <code>AppServiceBasedControllerActivator : IControllerActivator</code> to instantiate new module Controllers</li>
+      <li><b>What's still missing is how to record found EDM models...</b></li>
+    </ul>
+  </li>
 </ul>
 
 
@@ -75,11 +88,13 @@ Once loaded... let's see:
 
 <h5>Next</h5>
 <p>
-  No idea...I'm stuck. The OData part is crucial.
+  No idea...I'm stuck. Getting a Module's EDM based OData routes registered is *crucial*.
 </p>
 <p>
-  And, to be frank, the whole using of a dictionary to get to an Autofac scope seems so sketchy that
-  I'm hoping someone slaps me over the back of the head and says there is a MUCH simpler way to do the
-  same thing...
+  And, to be frank, the whole use of
+  <code>ControllerTypeToScopeDictionary</code> / <code>AppServiceBasedControllerActivator</code>
+    seems so sketchy that
+    I'm hoping someone slaps me over the back of the head and says there is a MUCH simpler way to do the
+    same thing...
 </p>
 

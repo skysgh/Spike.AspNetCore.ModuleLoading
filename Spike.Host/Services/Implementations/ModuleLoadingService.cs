@@ -19,11 +19,11 @@ namespace App.Base.Host.Services.Implementations
         private readonly IPluginValidationService _pluginValidationService;
         private readonly IHostApplicationLifetime _applicationLifetime;
 
-        public ScopeDictionary Scopes
+        public ControllerTypeToScopeDictionary Scopes
         {
             get
             {
-                return ScopeDictionary.Instance;
+                return ControllerTypeToScopeDictionary.Instance;
             }
         }
 
@@ -144,7 +144,7 @@ namespace App.Base.Host.Services.Implementations
 
             // Save for later (it's how info is shared with
             // our custom MyServiceBasedControllerActivator
-            ScopeDictionaryEntry controllerTypeScopeInfo = new ScopeDictionaryEntry()
+            ControllerToScopeDictionaryEntry controllerTypeScopeInfo = new ControllerToScopeDictionaryEntry()
             {
                 Context = context,
                 Assembly = assembly,
@@ -248,7 +248,7 @@ namespace App.Base.Host.Services.Implementations
             return results;
         }
 
-        private static void SaveControllerTypeAgainstDIScopeForLaterUse(List<Type> controllerTypes, ScopeDictionaryEntry controllerTypeScopeInfo)
+        private static void SaveControllerTypeAgainstDIScopeForLaterUse(List<Type> controllerTypes, ControllerToScopeDictionaryEntry controllerTypeScopeInfo)
         {
             // This is the info that is shared with
             // our custom MyServiceBasedControllerActivator
@@ -256,7 +256,7 @@ namespace App.Base.Host.Services.Implementations
             {
                 // Save the scope so that it doesn't get Disposed.
                 // We'll try to use it again from a Controller creator.
-                ScopeDictionary.Instance[controllerType] = controllerTypeScopeInfo;
+                ControllerTypeToScopeDictionary.Instance[controllerType] = controllerTypeScopeInfo;
             }
         }
 
