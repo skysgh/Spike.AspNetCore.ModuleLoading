@@ -11,7 +11,7 @@ namespace App.Base.Host.API.OData
     public class ControllerO1Controller : ODataController
     {
         private IExampleHService _exampleHService;
-
+        
         public ControllerO1Controller(IExampleHService exampleSharedService)
         {
             _exampleHService = exampleSharedService;
@@ -20,7 +20,7 @@ namespace App.Base.Host.API.OData
 
         [EnableQuery(PageSize = 100)]
         [HttpGet("")]
-        [HttpGet("Get")]
+        //Not good for OData: [HttpGet("Get")]
         [HttpGet("$count")]
         //[ApiExplorerSettings(GroupName = AppAPIConstants.OpenAPI.Generation.Areas.ModuleA.OData.ID)]
         public IActionResult Get()

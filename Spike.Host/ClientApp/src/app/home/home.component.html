@@ -11,16 +11,20 @@
 <p>
   Whereas <code>IServiceCollection</code> can be populated as the source
   for making the <code>IServiceProvider</code> at startup,
-  the <code>IServiceProvider</code> is locked off from further change...
-  there is nowhere to register a Service
-  that became available when the new plugin module was loaded.
+  the <code>IServiceProvider</code> is then locked off from further change...
+  ie, there is nowhere to register a new Service
+  that becomes only available when a plugin module is loaded.
 </p>
+<h5>Tasks</h5>
 <p>
-  There are atleast two types of controllers to watch out for:
-  Web API and OData COntrollers.
+  There are a few things to wire up when loading a module:
+  Services, Web API Controllers, and
+  - optionally - OData COntrollers and their
+  associated EDM model.
 </p>
 
 <h5>Debugging</h5>
+Use the following to know what services are available:
 <ul>
   <li><a href="$odata" target="_blank">$OData</a>  Shows list of registered services.</li>
 </ul>
@@ -28,6 +32,7 @@
 
 https://localhost:7245/api/rest/base/v1/exampleh1
 <h5>Example Host Controllers</h5>
+At startup, one should see only the API endpoints that existed in Base:
 <!-- As we're just interested in api calls, the following don't open views -->
 <ul>
   <li><a href="/api/rest/base/v1/exampleH1" target="_blank">H1</a>  Invokes a Base Web API controller, no DI required.</li>
@@ -62,51 +67,53 @@ https://localhost:7245/api/rest/base/v1/exampleh1
       <li>creating a new <code>Autofac ILifetimeScope</code> to register new module Services/Controllers into,</li>
       <li>recording info in a singleton <code>ControllerTypeToScopeDictionary</code> for use later</li>
       <li>by <code>AppServiceBasedControllerActivator : IControllerActivator</code> to instantiate new module Controllers</li>
-      <li><b>What's still missing is how to record found EDM models...</b></li>
-      <li><b>Correction! Hacked/solved?...</b></li>
+      <li>And now (finally!) EDM models are being registered...</li>
     </ul>
   </li>
 </ul>
-
-
+<p>
+  <i>note: one day (not today) we'll get around to showing a Nuget plugin option lister, picker, etc..</i>
+</p>
 <h5>Example Module Controller</h5>
-Once loaded... let's see:
+Once loaded... the new Controllers should be available (hint, recheck "~/odata").
 <!-- As we're just interested in api calls, the following don't open views -->
 <ul>
   <li><a href="/api/rest/module/v1/examplem1" target="_blank">M1</a> Shows DI of a framework service work (works).</li>
   <li><a href="/api/rest/module/v1/examplem2" target="_blank">M2</a> Shows DI of a previously registered Host service (works). </li>
   <li><a href="/api/rest/module/v1/examplem3" target="_blank">M3</a> Shows DI of a new Module service (works).</li>
-  </ul>
+</ul>
 <i>
   And...the cherry on the top...is now working!
-  <br/>
+  <br />
   The following OData Controller is accessible as an OData controller
   (you can also verify this in <code>~/$odata/</code> where it is listed in the odata section...)
   ! (At last...)
 </i>
 <ul>
-  <li><a href="/api/odata/module/v1/ExampleO1" target="_blank">O1</a> Shows DI of a new Module service (doesn't <b><i>really</i></b> work).</li>
+  <li><a href="/api/odata/module/v1/RenamedO1" target="_blank">O1</a> Shows DI of a new Module service (doesn't <b><i>really</i></b> work).</li>
 </ul>
 
 <h5>Next</h5>
-<p>
-  Frank, I'm still concerned as to the hacky way of solving this.
-  </p>
-<p>
-  <code>ControllerTypeToScopeDictionary</code> / <code>AppServiceBasedControllerActivator</code>
-    seems so sketchy that
-    I'm hoping someone slaps me over the back of the head and says there is a MUCH simpler way to do the
+  Frankly, even if it is admittedly a PoC,
+  I'm still concerned as to the hacky way of solving this.
+<ul>
+  <li>
+    <code>ControllerTypeToScopeDictionary</code> / <code>AppServiceBasedControllerActivator</code>
+    seems so sketchy that I'm hoping someone slaps me over the back of the head and says there is a MUCH simpler way to do the
     same thing...
-</p>
+  </li>
+  <li>
+    Not to mention the way we're adding the secondary EDM model...(amazed it works actually...)
+  </li>
+  <li>
+    Or the probably dangerously primitive
+    security measures of decompiling code to look into it to
+    see if any of it is hitting the file system, or Activating things...
+  </li>
+</ul>
+
 <p>
-  Not to mention the way we're adding the secondary EDM model...
-</p>
-<p>
-  Or the probably still primitive
-  security measures of looking at code to
-  see if any of it is hitting the file system or Newing things...
-</p>
-<p>
-  But does anybody have a better example on how to load Modules in an asp.net core app?
+  But does anybody have a better example on how to
+  load Plugins in an Asp.Net Core service?
 </p>
 

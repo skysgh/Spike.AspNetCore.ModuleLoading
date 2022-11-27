@@ -62,7 +62,7 @@
                             {
                                 public class Controller1
                                 {
-                                    public const string Name = "ExampleO1";
+                                    public const string Name = "RenamedO1";
                                     public const string Route = $"{RoutePrefix}/{Name}";
                                 }
                             }

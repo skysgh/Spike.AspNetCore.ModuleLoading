@@ -17,7 +17,7 @@ namespace App.Modules.Example.Controllers.OData
 
         [EnableQuery(PageSize = 100)]
         [HttpGet("")]
-        [HttpGet("Get")]
+        //Not good for OData: [HttpGet("Get")]
         [HttpGet("$count")]
         //[ApiExplorerSettings(GroupName = AppAPIConstants.OpenAPI.Generation.Areas.ModuleA.OData.ID)]
         public IEnumerable<ExampleModuleModel> Get()
