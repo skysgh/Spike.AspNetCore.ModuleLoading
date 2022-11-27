@@ -16,7 +16,7 @@
   that became available when the new plugin module was loaded.
 </p>
 <p>
-  There are two types of controllers to watch out for.
+  There are atleast two types of controllers to watch out for:
   Web API and OData COntrollers.
 </p>
 
@@ -63,6 +63,7 @@ https://localhost:7245/api/rest/base/v1/exampleh1
       <li>recording info in a singleton <code>ControllerTypeToScopeDictionary</code> for use later</li>
       <li>by <code>AppServiceBasedControllerActivator : IControllerActivator</code> to instantiate new module Controllers</li>
       <li><b>What's still missing is how to record found EDM models...</b></li>
+      <li><b>Correction! Hacked/solved?...</b></li>
     </ul>
   </li>
 </ul>
@@ -77,10 +78,11 @@ Once loaded... let's see:
   <li><a href="/api/rest/module/v1/examplem3" target="_blank">M3</a> Shows DI of a new Module service (works).</li>
   </ul>
 <i>
-  But whereas the following is working as a WebAPI,
-  it is <b>NOT</b> registered as an ODataController
-  (you can verify this in <code>~/$odata/</code>)
-  where it is listed in non-odata section...)
+  And...the cherry on the top...is now working!
+  <br/>
+  The following OData Controller is accessible as an OData controller
+  (you can also verify this in <code>~/$odata/</code> where it is listed in the odata section...)
+  ! (At last...)
 </i>
 <ul>
   <li><a href="/api/odata/module/v1/ExampleO1" target="_blank">O1</a> Shows DI of a new Module service (doesn't <b><i>really</i></b> work).</li>
@@ -88,13 +90,23 @@ Once loaded... let's see:
 
 <h5>Next</h5>
 <p>
-  No idea...I'm stuck. Getting a Module's EDM based OData routes registered is *crucial*.
-</p>
+  Frank, I'm still concerned as to the hacky way of solving this.
+  </p>
 <p>
-  And, to be frank, the whole use of
   <code>ControllerTypeToScopeDictionary</code> / <code>AppServiceBasedControllerActivator</code>
     seems so sketchy that
     I'm hoping someone slaps me over the back of the head and says there is a MUCH simpler way to do the
     same thing...
+</p>
+<p>
+  Not to mention the way we're adding the secondary EDM model...
+</p>
+<p>
+  Or the probably still primitive
+  security measures of looking at code to
+  see if any of it is hitting the file system or Newing things...
+</p>
+<p>
+  But does anybody have a better example on how to load Modules in an asp.net core app?
 </p>
 

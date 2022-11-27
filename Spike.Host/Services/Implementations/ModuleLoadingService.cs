@@ -9,6 +9,12 @@ using System.Reflection;
 using App.Base.DI;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using App.Base.MVC.Infrastructure;
+using Microsoft.AspNetCore.OData;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OData.Edm;
+using App.Base.API.OData.ModelBuilders;
+using Microsoft.OData.ModelBuilder;
+using System;
 
 namespace App.Base.Host.Services.Implementations
 {
@@ -16,6 +22,7 @@ namespace App.Base.Host.Services.Implementations
     {
         private readonly ApplicationPartManager _applicationPartManager;
         private readonly ILifetimeScope _lifetimeScope;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IPluginValidationService _pluginValidationService;
         private readonly IHostApplicationLifetime _applicationLifetime;
 
@@ -28,6 +35,7 @@ namespace App.Base.Host.Services.Implementations
         }
 
         public ModuleLoadingService(
+            IServiceProvider serviceProvider,
             IPluginValidationService pluginValidationService,
             IHostApplicationLifetime applicationLifetime,
             ApplicationPartManager applicationPartManager,
@@ -35,16 +43,17 @@ namespace App.Base.Host.Services.Implementations
         {
             _applicationPartManager = applicationPartManager;
             this._lifetimeScope = lifetimeScope;
+            _serviceProvider = serviceProvider;
             this._pluginValidationService = pluginValidationService;
             _applicationLifetime = applicationLifetime;
         }
 
 
-        public Assembly Load(string assemblyFilePath, string? assemblyResolutionBaseDirectoryPath=null)
+        public Assembly Load(string assemblyFilePath, string? assemblyResolutionBaseDirectoryPath = null)
         {
             if (string.IsNullOrEmpty(assemblyResolutionBaseDirectoryPath))
             {
-                assemblyResolutionBaseDirectoryPath = 
+                assemblyResolutionBaseDirectoryPath =
                     Path.GetDirectoryName(assemblyFilePath);
             }
 
@@ -60,9 +69,9 @@ namespace App.Base.Host.Services.Implementations
             {
                 return null;
             }
-            
 
-            var loadContext = 
+
+            var loadContext =
                 new AppModuleLoadContext(assemblyResolutionBaseDirectoryPath);
 
             //var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
@@ -86,7 +95,7 @@ namespace App.Base.Host.Services.Implementations
                 .ApplicationParts
                 .Add(new AssemblyPart(assembly));
 
-            ILifetimeScope scope = 
+            ILifetimeScope scope =
                 RegisterDependenciesInDIScope(loadContext, assembly);
 
             //scope.s.AddControllers().AddOData(opt => opt.AddRouteComponents("odata", GetEdmModel()));
@@ -100,15 +109,18 @@ namespace App.Base.Host.Services.Implementations
             return assembly;
         }
 
-     
+
 
         private ILifetimeScope RegisterDependenciesInDIScope(AppModuleLoadContext context, Assembly assembly)
         {
             ContainerBuilder autoFacContainerBuilderUsed = null;
 
             List<Type> serviceTypes;
-            List<Type> controllerTypes=new List<Type>();
+            List<Type> controllerTypes = new List<Type>();
             List<Type> oDataControllerTypes;
+
+            // TODO: Primitive/improvable way to look for Services
+            var assemblyExportedTypes = assembly.ExportedTypes;
 
             // Now go through Types:
             ILifetimeScope moduleLifetimeScope =
@@ -122,25 +134,28 @@ namespace App.Base.Host.Services.Implementations
                     // you have to add new services and controllers to 
                     // it before you leave...
 
-                    // TODO: Primitive/improvable way to look for Services
-                    var assemblyTypes = assembly.ExportedTypes;
 
                     serviceTypes =
                         RegisterNewServicesInNewDIScope(
                         autoFacContainerBuilderUsed,
-                        assemblyTypes);
+                        assemblyExportedTypes);
 
                     controllerTypes.AddRange(
                         RegisterControllersInNewDIScope(
                            autoFacContainerBuilderUsed,
-                           assemblyTypes));
+                           assemblyExportedTypes));
                     // Routes and Services registered...but now
                     // the magic of EDM and OData...which I don't
                     // know enough port what's in the ExtensionMethods
                     // to this...
                     oDataControllerTypes =
-                        RegisterODataEDM(controllerTypes);
+                        RegisterODataControllerTypes(controllerTypes);
+
                 });
+
+            //think it's ok to register this outside the scope
+            //as I need Module services at this point.
+            RegisterODataEDMModel(assemblyExportedTypes, moduleLifetimeScope);
 
             // Save for later (it's how info is shared with
             // our custom MyServiceBasedControllerActivator
@@ -185,8 +200,8 @@ namespace App.Base.Host.Services.Implementations
         private static List<Type> RegisterControllersInNewDIScope(ContainerBuilder autoFacContainerBuilderUsed, IEnumerable<Type> assemblyTypes)
         {
             List<Type> results = new List<Type>();
-                
-                //Search for and register controllers:
+
+            //Search for and register controllers:
             foreach (var controllerType in assemblyTypes)
             {
                 if (typeof(ControllerBase).IsAssignableFrom(controllerType))
@@ -201,7 +216,7 @@ namespace App.Base.Host.Services.Implementations
             return results;
         }
 
-        private static List<Type> RegisterODataEDM(IEnumerable<Type> controllerInstances)
+        private static List<Type> RegisterODataControllerTypes(IEnumerable<Type> controllerInstances)
         {
             List<Type> results = new List<Type>();
 
@@ -246,6 +261,42 @@ namespace App.Base.Host.Services.Implementations
             //    );
 
             return results;
+        }
+
+        private void RegisterODataEDMModel(IEnumerable<Type> assemblyExportedTypes, ILifetimeScope lifetimeScope)
+        {
+            Type? edmModelBuilderType =
+                assemblyExportedTypes
+                .Where(x =>
+                    typeof(IEdmModelBuilder).IsAssignableFrom(x))
+                .FirstOrDefault();
+            if (edmModelBuilderType == null)
+            {
+                return;
+            }
+
+            var edmModel = 
+                ((IEdmModelBuilder)Activator.CreateInstance(edmModelBuilderType))
+                .BuildModel();
+            // Now register the sucker.
+
+            var odataOptionsCheck = _serviceProvider.GetService<ODataOptions>();
+
+            var firstEntry = odataOptionsCheck.RouteComponents.First().Value;
+            IServiceProvider odataServiceProvider = firstEntry.ServiceProvider;
+
+
+            //Notice we want the Modules ServiceProvider, *not* the Base one.
+            
+            var moduleInformationProviderService = lifetimeScope.Resolve<IModuleInformationProviderService>();
+
+            // will need to not hard coded later:
+            string serviceRoute = moduleInformationProviderService?.RestODataRoutePrefix;
+
+            odataOptionsCheck
+                .RouteComponents[serviceRoute] = 
+                (edmModel, odataServiceProvider);
+
         }
 
         private static void SaveControllerTypeAgainstDIScopeForLaterUse(List<Type> controllerTypes, ControllerToScopeDictionaryEntry controllerTypeScopeInfo)

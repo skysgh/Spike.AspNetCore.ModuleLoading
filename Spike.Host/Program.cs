@@ -16,11 +16,16 @@ using App.Base.API.OData.ModelBuilders;
 using App.Base.API;
 using App.Base.MVC.Infrastructure;
 using App.Base.MVC.Controllers;
+using ICSharpCode.Decompiler.IL;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace App.ModuleLoadingAndDI
 {
     public class Program
     {
+
+        public static ODataOptions HoldOptions=null;
 
         private static CancellationTokenSource 
             cancelTokenSource = 
@@ -42,6 +47,8 @@ namespace App.ModuleLoadingAndDI
 
             RegisterServicesNeededToImport3rdPartyModulesAndTheirControllersAndServices(builder);
 
+
+
             builder.Services
                 .AddControllersWithViews()
                 //Force this on to ensure DI works after modules are loaded
@@ -49,24 +56,36 @@ namespace App.ModuleLoadingAndDI
                 //But OData works as always:
                 .AddOData(
                                 opt =>
-                                opt.Count()
-                                .Filter()
-                                .Expand()
-                                .Select()
-                                .OrderBy()
-                                .SetMaxTop(5)
-                                //Add Base EDM:
-                                .AddRouteComponents(
-                                    AppAPIConstants.Areas.Base.OData.V1.Routing.RoutePrefix,
-                                    AppModuleBaseEdmModelBuilder.BuildModel())
-                                // This is on by default, but still...
-                                .EnableAttributeRouting = true
+                                {
+                                    //Note. Not called until MapControllerRoute is invoked later down the page.
+
+                                    HoldOptions = opt;
+
+                                    opt.Count()
+                                        .Filter()
+                                        .Expand()
+                                        .Select()
+                                        .OrderBy()
+                                        .SetMaxTop(5)
+                                        //Add Base EDM:
+                                        .AddRouteComponents(
+                                            AppAPIConstants.Areas.Base.OData.V1.Routing.RoutePrefix,
+                                            new AppModuleBaseEdmModelBuilder().BuildModel())
+                                        // This is on by default, but still...
+                                        .EnableAttributeRouting = true;
+                                }
                 );
+
+            //Make it easily available later(ie when uploading module):
+
 
             AddReplacementFactoryOfControllersThatIsAwareOfChildDIScopes(builder);
 
             // Wire up custom Resetter invoked by upload controller.
             AddActionDescriptorChangeProvider(builder);
+
+            builder.Services.AddSingleton<ODataOptions>((x)=>HoldOptions);
+
 
             // That was the last chance to add anthing before Build is called:
             // =======================================================
@@ -74,6 +93,8 @@ namespace App.ModuleLoadingAndDI
             var app = builder.Build();
             // =======================================================
             // =======================================================
+
+
 
             // IE: This won't work now:
             // builder.Services.AddSingleton<ILateService, LateService>();
@@ -85,6 +106,7 @@ namespace App.ModuleLoadingAndDI
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
+
 
             // Register default route for WebAPI controllers :
             app.MapControllerRoute(
@@ -101,6 +123,12 @@ namespace App.ModuleLoadingAndDI
 
             // This page will load the Angular page:
             app.MapFallbackToFile("index.html");
+            
+
+            //Check to see that we will be able to get this later
+            //in implementation of IModuleLoadingService:
+            var odataOptionsCheck = app.Services.GetService<ODataOptions>();
+            var odataServiceProvider = odataOptionsCheck.RouteComponents.First().Value;
 
             app.Run();
         }

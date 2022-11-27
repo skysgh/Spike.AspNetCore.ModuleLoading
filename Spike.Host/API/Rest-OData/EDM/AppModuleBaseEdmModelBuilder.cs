@@ -1,12 +1,13 @@
 ﻿using App.Base.Shared.Models;
+using App.Base.Shared.Services;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 
 namespace App.Base.API.OData.ModelBuilders
 {
-    public static class AppModuleBaseEdmModelBuilder
+    public class AppModuleBaseEdmModelBuilder : IEdmModelBuilder
     {
-        public static IEdmModel BuildModel()
+        public IEdmModel BuildModel()
         {
             var builder = new ODataConventionModelBuilder();
 
