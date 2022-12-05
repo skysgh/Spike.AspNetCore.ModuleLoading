@@ -95,7 +95,7 @@ namespace App.ModuleLoadingAndDI
 
             string connectionString = builder.Configuration.GetConnectionString("DefaultSqlServer");
 
-            builder.Services.AddDbContext<AppDbContext>(
+             builder.Services.AddDbContext<AppDbContext>(
                 x =>
                 {
                     x.EnableSensitiveDataLogging(true);
