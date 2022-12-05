@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using App.Modules.Example.API;
 using App.Modules.Example.Services;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace App.Modules.Example
 {
@@ -16,6 +18,7 @@ namespace App.Modules.Example
         }
 
         [HttpGet]
+        //[Authorize(Roles = ApiConstants.Areas.Module.Permissions.SomethingSomething)]
         public IActionResult Get()
         {
             return Content(_exampleMService.Do());

@@ -9,6 +9,14 @@
             public class Module
             {
                 public const string Name = "Module";
+                public class Permissions {
+                    public const string SomethingSomething = "SomethingGet";
+                    public const string StudentsSummarise = "StudentsList";
+                    public const string StudentsRead = "StudentsRead";
+                    public const string StudentsWrite = "StudentsWrite";
+                    public const string StudentsDelete = "StudentsDelete";
+                }
+
                 public class Rest
                 {
                     public class V1

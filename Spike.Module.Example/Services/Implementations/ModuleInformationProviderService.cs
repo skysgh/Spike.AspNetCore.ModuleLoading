@@ -26,5 +26,20 @@ namespace App.Modules.Example.Services.Implementations
         {
             get => ApiConstants.Areas.Module.OData.V1.Routing.RoutePrefix;
         }
+
+        public string[] Permissions
+        {
+            get
+            {
+                return new string[]{
+                ApiConstants.Areas.Module.Permissions.StudentsSummarise,
+                ApiConstants.Areas.Module.Permissions.StudentsRead,
+                ApiConstants.Areas.Module.Permissions.StudentsWrite,
+                ApiConstants.Areas.Module.Permissions.StudentsDelete
+                };
+            }
+
+}
+
     }
 }

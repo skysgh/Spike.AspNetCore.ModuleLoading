@@ -20,3 +20,11 @@ Investigation of loading Modules into Asp.Net.Core *after* startup.
     - which in turn pulls in
     - Host/ClientApp/src/app contents
     - See Host/ClientApp/src/app/nav-menu to link to different views.
+
+
+## Setup ##
+As this poc has progressed to also sort out developing DBContexts
+you have to first make a db called `Spike20221206A` in your localdb:
+as the base ConnectionString is
+
+`"Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Spike20221206A;Integrated Security = True;"`

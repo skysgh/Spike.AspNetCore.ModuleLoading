@@ -19,6 +19,8 @@ using App.Base.MVC.Controllers;
 using ICSharpCode.Decompiler.IL;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Microsoft.EntityFrameworkCore;
+using App.Base.Data.Storage.Db.EF;
 
 namespace App.ModuleLoadingAndDI
 {
@@ -87,6 +89,19 @@ namespace App.ModuleLoadingAndDI
             builder.Services.AddSingleton<ODataOptions>((x)=>HoldOptions);
 
 
+            // =======================================================
+            // TODO: Have not found way to replicate this for modules.
+            // =======================================================
+
+            string connectionString = builder.Configuration.GetConnectionString("DefaultSqlServer");
+
+            builder.Services.AddDbContext<AppDbContext>(
+                x =>
+                {
+                    x.EnableSensitiveDataLogging(true);
+                    x.UseSqlServer(connectionString);
+                });
+
             // That was the last chance to add anthing before Build is called:
             // =======================================================
             // =======================================================
@@ -107,6 +122,8 @@ namespace App.ModuleLoadingAndDI
             app.UseStaticFiles();
             app.UseRouting();
 
+
+            app.UseAuthorization();
 
             // Register default route for WebAPI controllers :
             app.MapControllerRoute(
@@ -130,6 +147,27 @@ namespace App.ModuleLoadingAndDI
             var odataOptionsCheck = app.Services.GetService<ODataOptions>();
             var odataServiceProvider = odataOptionsCheck.RouteComponents.First().Value;
 
+
+
+
+            // =======================================================
+            // =======================================================
+            // Migrate:
+            using (var scope = app.Services.CreateScope())
+            {
+                using (var context = scope.ServiceProvider.GetService<AppDbContext>())
+                {
+                    //context.Database.EnsureCreated();
+
+                    ////context.Persons.Add(new Data.Storage.Models.ExamplePerson { Id = Guid.NewGuid(), Title = "Something", Description = "Else" });
+
+                    //context.SaveChanges();
+
+                    context.Database.Migrate();
+                }
+            }
+            // =======================================================
+            // =======================================================
             app.Run();
         }
 
