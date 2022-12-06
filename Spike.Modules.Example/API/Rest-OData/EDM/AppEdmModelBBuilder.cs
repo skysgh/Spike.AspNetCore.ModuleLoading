@@ -14,7 +14,7 @@ namespace App.Modules.Example.API.OData.ModelBuilders
             /*01*/
             // Works, follows convention of part-part == controller name prefix 
             builder.EntitySet<ExampleModuleModel>(
-                ApiConstants.Areas.Module.OData.V1.Routing.Controllers.Controller1.Name);
+                ModuleApiConstants.Areas.Module.OData.V1.Routing.Controllers.Controller1.Name);
 
             return builder.GetEdmModel();
 

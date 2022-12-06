@@ -15,5 +15,7 @@ namespace App.Base.DI
 
         // The Assembly containing the Controller Type
         public Assembly Assembly { get; set; }
+
+        public IServiceProvider ServiceProvider { get; set; }
     }
 }

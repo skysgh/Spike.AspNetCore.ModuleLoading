@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <BaseOutputPath>../Spike.Host/MODULES/bin</BaseOutputPath>
+    <BaseOutputPath>../Spike.Base.Host/MODULES/bin</BaseOutputPath>
     <Title>Fubar fuzz whz</Title>
 	  <!--<EnableDynamicLoading>True</EnableDynamicLoading>-->
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -27,6 +27,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>

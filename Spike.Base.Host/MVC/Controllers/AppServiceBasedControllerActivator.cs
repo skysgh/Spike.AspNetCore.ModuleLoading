@@ -69,6 +69,7 @@ namespace App.Base.MVC.Controllers
                 // Controller:
                 ControllerToScopeDictionaryEntry scopeDictionaryEntry;
 
+
                 ControllerTypeToScopeDictionary.Instance.TryGetValue(controllerType, out scopeDictionaryEntry);
                 if (scopeDictionaryEntry == null)
                 {
@@ -77,14 +78,17 @@ namespace App.Base.MVC.Controllers
                 // Fail to another handler since
                 // we didn't replace ,we added...?
 
-                scopeDictionaryEntry
-                    // use the module specific autofac child scope
-                    // to instantiate new controller. 
-                    // will find module specific services for injection
-                    // and if not found, will look in original parent
-                    // one, finding all dependencies.
-                    .Scope
-                    .TryResolve(controllerType, out httpController);
+
+                //scopeDictionaryEntry
+                //    // use the module specific autofac child scope
+                //    // to instantiate new controller. 
+                //    // will find module specific services for injection
+                //    // and if not found, will look in original parent
+                //    // one, finding all dependencies.
+                //    .Scope
+                //    .TryResolve(controllerType, out httpController);
+
+                httpController = scopeDictionaryEntry.ServiceProvider.GetService(controllerType);
 
                 return httpController;
             }

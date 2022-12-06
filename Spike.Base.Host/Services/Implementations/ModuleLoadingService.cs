@@ -15,6 +15,13 @@ using Microsoft.OData.Edm;
 using App.Base.API.OData.ModelBuilders;
 using Microsoft.OData.ModelBuilder;
 using System;
+using App.Base.Shared.Services.Implementations;
+using App.ModuleLoadingAndDI;
+using System.ComponentModel.Design;
+using Microsoft.Extensions.DependencyInjection;
+using App.Base.Data.Storage.Db.EF;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace App.Base.Host.Services.Implementations
 {
@@ -95,7 +102,6 @@ namespace App.Base.Host.Services.Implementations
                 .ApplicationParts
                 .Add(new AssemblyPart(assembly));
 
-            ILifetimeScope scope =
                 RegisterDependenciesInDIScope(loadContext, assembly);
 
             //scope.s.AddControllers().AddOData(opt => opt.AddRouteComponents("odata", GetEdmModel()));
@@ -111,51 +117,72 @@ namespace App.Base.Host.Services.Implementations
 
 
 
-        private ILifetimeScope RegisterDependenciesInDIScope(AppModuleLoadContext context, Assembly assembly)
+        private void RegisterDependenciesInDIScope(AppModuleLoadContext context, Assembly assembly)
         {
             ContainerBuilder autoFacContainerBuilderUsed = null;
 
-            List<Type> serviceTypes;
-            List<Type> controllerTypes = new List<Type>();
-            List<Type> oDataControllerTypes;
 
             // TODO: Primitive/improvable way to look for Services
             var assemblyExportedTypes = assembly.ExportedTypes;
 
-            // Now go through Types:
-            ILifetimeScope moduleLifetimeScope =
-                _lifetimeScope.BeginLifetimeScope(autoFacContainerBuilder =>
+            //Gawd I can be soooo dumb.
+            var baseServiceCollection = _serviceProvider.GetService<IServiceCollection>();
+            var clonedServiceCollection = Program.Clone(baseServiceCollection);
+
+
+            RegisterNewServicesInNewDIScope(
+               clonedServiceCollection,
+               assemblyExportedTypes);
+
+            var controllerTypes =
+                RegisterControllersInNewDIScope(
+             clonedServiceCollection,
+             assemblyExportedTypes);
+
+            RegisterODataEDMModel(clonedServiceCollection, assemblyExportedTypes);
+
+
+            string connectionString = _serviceProvider.GetService<IConfiguration>().GetConnectionString("DefaultSqlServer");
+
+
+            Type? moduleDbContextType =
+                assemblyExportedTypes
+                .Where(x =>
+                    typeof(DbContext).IsAssignableFrom(x))
+                .FirstOrDefault();
+
+            if (moduleDbContextType != null)
+            {
+                //ModuleDbContext: DbContext
+                Type t = typeof(EntityFrameworkServiceCollectionExtensions);
+
+                MethodInfo extensionMethodMethodInfo = t.GetMethod(
+                        name: nameof(EntityFrameworkServiceCollectionExtensions.AddDbContext),
+                        genericParameterCount: 1,
+                        types: new Type[] {
+                                typeof(IServiceCollection),
+                                System.Linq.Expressions.Expression.GetActionType(typeof(DbContextOptionsBuilder)),
+                                typeof(ServiceLifetime),
+                                typeof(ServiceLifetime)
+                                    }
+                        );
+
+                MethodInfo genericExtensionMethodMethodInfo =
+                    extensionMethodMethodInfo.MakeGenericMethod(moduleDbContextType);
+
+                Action<DbContextOptionsBuilder> callback = x =>
                 {
-                    //Save a copy for after we leave scope:
-                    autoFacContainerBuilderUsed
-                      = autoFacContainerBuilder;
+                    x.EnableSensitiveDataLogging(true);
+                    x.UseSqlServer(connectionString);
+                };
 
-                    //Even though you have a copy of it, saved, 
-                    // you have to add new services and controllers to 
-                    // it before you leave...
+                genericExtensionMethodMethodInfo.Invoke(
+                    obj: null /*extensionmethods are null*/,
+                    parameters: new object[] { clonedServiceCollection, callback, ServiceLifetime.Scoped, ServiceLifetime.Scoped }
+                );
+            }
+            var serviceProvider = clonedServiceCollection.BuildServiceProvider();
 
-
-                    serviceTypes =
-                        RegisterNewServicesInNewDIScope(
-                        autoFacContainerBuilderUsed,
-                        assemblyExportedTypes);
-
-                    controllerTypes.AddRange(
-                        RegisterControllersInNewDIScope(
-                           autoFacContainerBuilderUsed,
-                           assemblyExportedTypes));
-                    // Routes and Services registered...but now
-                    // the magic of EDM and OData...which I don't
-                    // know enough port what's in the ExtensionMethods
-                    // to this...
-                    oDataControllerTypes =
-                        RegisterODataControllerTypes(controllerTypes);
-
-                });
-
-            //think it's ok to register this outside the scope
-            //as I need Module services at this point.
-            RegisterODataEDMModel(assemblyExportedTypes, moduleLifetimeScope);
 
             // Save for later (it's how info is shared with
             // our custom MyServiceBasedControllerActivator
@@ -163,19 +190,30 @@ namespace App.Base.Host.Services.Implementations
             {
                 Context = context,
                 Assembly = assembly,
-                Scope = moduleLifetimeScope
+                ServiceProvider = serviceProvider
             };
 
 
             SaveControllerTypeAgainstDIScopeForLaterUse(controllerTypes, controllerTypeScopeInfo);
 
-            // Return the Scope being created
-            return moduleLifetimeScope;
+
+            using (var scope = serviceProvider.CreateScope())
+            {
+                DbContext context2 = serviceProvider.GetService(moduleDbContextType) as DbContext;
+
+                //context.Database.EnsureCreated();
+
+                ////context.Persons.Add(new Data.Storage.Models.ExamplePerson { Id = Guid.NewGuid(), Title = "Something", Description = "Else" });
+
+                //context.SaveChanges();
+
+                context2.Database.Migrate();
+
+            }
         }
 
-        private static List<Type> RegisterNewServicesInNewDIScope(ContainerBuilder autofacContainerBuilder, IEnumerable<Type> assemblyTypes)
+        private static void RegisterNewServicesInNewDIScope(IServiceCollection serviceCollection, IEnumerable<Type> assemblyTypes)
         {
-            List<Type> results = new List<Type>();
 
             //Search for Services first:
             foreach (var serviceType in assemblyTypes)
@@ -189,15 +227,16 @@ namespace App.Base.Host.Services.Implementations
                     continue;
                 }
                 var tInterface = serviceType.GetInterfaces().First();
-                // If ONLY WE COULD DO THIS NOW!!!!
-                //_serviceCollection.AddSingleton(tInterface, type);
-                //instead, add to builder:
-                autofacContainerBuilder.RegisterType(serviceType).As(tInterface);
-                results.Add(tInterface);
+     
+                serviceCollection.AddSingleton(tInterface, serviceType);
+
             }
-            return results;
         }
-        private static List<Type> RegisterControllersInNewDIScope(ContainerBuilder autoFacContainerBuilderUsed, IEnumerable<Type> assemblyTypes)
+
+
+  
+  
+        private static List<Type> RegisterControllersInNewDIScope(IServiceCollection serviceCollection, IEnumerable<Type> assemblyTypes)
         {
             List<Type> results = new List<Type>();
 
@@ -210,60 +249,16 @@ namespace App.Base.Host.Services.Implementations
                     results.Add(controllerType);
 
                     // But register the service:
-                    autoFacContainerBuilderUsed.RegisterType(controllerType);
+                    serviceCollection.AddTransient(controllerType);
                 }
             }
             return results;
         }
 
-        private static List<Type> RegisterODataControllerTypes(IEnumerable<Type> controllerInstances)
-        {
-            List<Type> results = new List<Type>();
 
-            //Search for and register controllers:
-            foreach (var controllerType in controllerInstances)
-            {
-                if (typeof(ODataController).IsAssignableFrom(controllerType))
-                {
-                    // Save for using next...                            
-                    results.Add(controllerType);
-                }
-            }
 
-            // Don't know how to do it so late:
-            ////
-            //// Add services to the container.
-            //containerBuilder.Services
-            //    .AddControllersWithViews()
-            //    //no!!!! Fails for Modules
-            //    .AddControllersAsServices()
-            //    //But OData works as always:
-            //    .AddOData(
-            //                    opt =>
-            //                    opt.Count()
-            //                    .Filter()
-            //                    .Expand()
-            //                    .Select()
-            //                    .OrderBy()
-            //                    .SetMaxTop(5)
-            //                    //Add Module/PluginA Routes:
-            //                    .AddRouteComponents(
-            //                        AppAPIConstants.Areas.Base.OData.V1.Routing.ODataPrefix,
-            //                        AppModuleBaseEdmModelBuilder.BuildModel())
-            //                    // But we won't add the next model, until 
-            //                    // it comes online when the Module is loaded
-            //                    //Add Module/PluginB Routes:
-            //                    //.AddRouteComponents(
-            //                    //     AppAPIConstants.Areas.ModuleB.OData.V1.Routing.ODataPrefix,
-            //                    //    AppModuleBEdmModelBuilder.BuildModel())
-            //                    //Uses AttributeRoutingConvention:
-            //                    .EnableAttributeRouting = true
-            //    );
 
-            return results;
-        }
-
-        private void RegisterODataEDMModel(IEnumerable<Type> assemblyExportedTypes, ILifetimeScope lifetimeScope)
+        private void RegisterODataEDMModel(IServiceCollection serviceCollection, IEnumerable<Type> assemblyExportedTypes)
         {
             Type? edmModelBuilderType =
                 assemblyExportedTypes
@@ -278,24 +273,34 @@ namespace App.Base.Host.Services.Implementations
             var edmModel = 
                 ((IEdmModelBuilder)Activator.CreateInstance(edmModelBuilderType))
                 .BuildModel();
-            // Now register the sucker.
 
-            var odataOptionsCheck = _serviceProvider.GetService<ODataOptions>();
+            var routePrefix = Base.API.AppAPIConstants.Areas.Base.OData.V1.Routing.RoutePrefix.Replace("Base", "Module");
 
-            var firstEntry = odataOptionsCheck.RouteComponents.First().Value;
-            IServiceProvider odataServiceProvider = firstEntry.ServiceProvider;
+            serviceCollection
+             .AddControllersWithViews()
+             //Force this on to ensure DI works after modules are loaded
+             .AddControllersAsServices()
+             //But OData works as always:
+             .AddOData(
+                             opt =>
+                             {
+                                 //Note. Not called until MapControllerRoute is invoked later down the page.
 
 
-            //Notice we want the Modules ServiceProvider, *not* the Base one.
-            
-            var moduleInformationProviderService = lifetimeScope.Resolve<IModuleInformationProviderService>();
-
-            // will need to not hard coded later:
-            string serviceRoute = moduleInformationProviderService?.RestODataRoutePrefix;
-
-            odataOptionsCheck
-                .RouteComponents[serviceRoute] = 
-                (edmModel, odataServiceProvider);
+                                 opt.Count()
+                                     .Filter()
+                                     .Expand()
+                                     .Select()
+                                     .OrderBy()
+                                     .SetMaxTop(5)
+                                     //Add Base EDM:
+                                     .AddRouteComponents(
+                                         routePrefix,
+                                         edmModel)
+                                     // This is on by default, but still...
+                                     .EnableAttributeRouting = true;
+                             }
+             );
 
         }
 

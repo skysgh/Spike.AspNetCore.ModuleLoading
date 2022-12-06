@@ -86,6 +86,7 @@ namespace App.ModuleLoadingAndDI
             // Wire up custom Resetter invoked by upload controller.
             AddActionDescriptorChangeProvider(builder);
 
+            builder.Services.AddSingleton<ILate2Service, Late2Service>();
             builder.Services.AddSingleton<ODataOptions>((x)=>HoldOptions);
 
 
@@ -95,12 +96,17 @@ namespace App.ModuleLoadingAndDI
 
             string connectionString = builder.Configuration.GetConnectionString("DefaultSqlServer");
 
-             builder.Services.AddDbContext<AppDbContext>(
-                x =>
-                {
-                    x.EnableSensitiveDataLogging(true);
-                    x.UseSqlServer(connectionString);
-                });
+            Action<DbContextOptionsBuilder> callback = x =>
+            {
+                x.EnableSensitiveDataLogging(true);
+                x.UseSqlServer(connectionString);
+            };
+
+            builder.Services.AddDbContext<AppDbContext>(callback);
+
+
+            // REALLY REALLY IMPORTANT (FOR PLUGIN LOADER TO FIND):
+            builder.Services.AddSingleton<IServiceCollection>(builder.Services);
 
             // That was the last chance to add anthing before Build is called:
             // =======================================================
@@ -109,12 +115,16 @@ namespace App.ModuleLoadingAndDI
             // =======================================================
             // =======================================================
 
-
-
             // IE: This won't work now:
             // builder.Services.AddSingleton<ILateService, LateService>();
             // Returns null:
             var x2 = app.Services.GetService<ILateService>();
+
+
+
+
+
+
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment()){app.UseHsts();}
@@ -146,7 +156,6 @@ namespace App.ModuleLoadingAndDI
             //in implementation of IModuleLoadingService:
             var odataOptionsCheck = app.Services.GetService<ODataOptions>();
             var odataServiceProvider = odataOptionsCheck.RouteComponents.First().Value;
-
 
 
 
@@ -188,7 +197,17 @@ namespace App.ModuleLoadingAndDI
         {
             //Replace:
             builder.Services.AddSingleton<IActionDescriptorChangeProvider>(AppActionDescriptorChangeProvider.Instance);
-            //builder.Services.AddSingleton(AppActionDescriptorChangeProvider.Instance);
+        }
+
+        public static IServiceCollection Clone (IServiceCollection source)
+        {
+            var result = new ServiceCollection();
+
+            foreach (var serv in source)
+            {
+                result.Add(serv);
+            }
+            return result;
         }
 
     }

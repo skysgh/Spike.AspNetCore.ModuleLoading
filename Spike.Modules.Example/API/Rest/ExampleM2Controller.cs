@@ -5,7 +5,7 @@ using App.Modules.Example.API;
 namespace App.Modules.Example
 {
     [ApiController]
-    [Route(ApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM2.Route)]
+    [Route(ModuleApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM2.Route)]
     public class ExampleM2Controller : ControllerBase
     {
         private readonly IExampleHService _exampleHService;

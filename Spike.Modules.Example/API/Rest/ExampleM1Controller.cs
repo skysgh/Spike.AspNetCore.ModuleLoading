@@ -7,7 +7,7 @@ using App.Modules.Example.Services;
 namespace App.Modules.Example.API.Rest
 {
     [ApiController]
-    [Route(ApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM1.Route)]
+    [Route(ModuleApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM1.Route)]
     public class ExampleM1Controller : ControllerBase
     {
 

@@ -7,7 +7,7 @@ using System.Data;
 namespace App.Modules.Example
 {
     [ApiController]
-    [Route(ApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM3.Route)]
+    [Route(ModuleApiConstants.Areas.Module.Rest.V1.Routing.Controllers.ExampleM3.Route)]
     public class ExampleM3Controller : ControllerBase
     {
         private readonly IExampleModuleService _exampleMService;

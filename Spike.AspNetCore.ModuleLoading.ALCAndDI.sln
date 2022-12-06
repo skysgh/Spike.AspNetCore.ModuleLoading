@@ -8,7 +8,7 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spike.Base.Shared", "Spike.Shared\Spike.Base.Shared.csproj", "{0E0DB4D3-19B1-4FA5-BA71-668FE93829B2}"
 EndProject
 
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spike.Modules.Example", "Spike.Module.Example\Spike.Modules.Example.csproj", "{BE5DBB03-F34D-44C0-8953-0049210E81AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spike.Modules.Example", "Spike.Modules.Example\Spike.Modules.Example.csproj", "{BE5DBB03-F34D-44C0-8953-0049210E81AD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "11.MODULES", "11.MODULES", "{5EACC519-C6C6-4AC8-9436-348136233D13}"
 EndProject

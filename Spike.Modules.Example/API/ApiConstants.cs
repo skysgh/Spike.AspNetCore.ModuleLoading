@@ -1,7 +1,7 @@
 ﻿namespace App.Modules.Example.API
 {
 
-    public partial class ApiConstants
+    public partial class ModuleApiConstants
     {
         // In general are in alignment with Modules:
         public partial class Areas
