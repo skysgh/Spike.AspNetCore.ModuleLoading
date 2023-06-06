@@ -11,11 +11,20 @@ namespace App.Modules.Example.Data.Storage.Db.EF
 {
     public class ModuleDbContext : DbContext
     {
-        public DbSet<BarEntity> Bar { get; set; }   
-        public ModuleDbContext() {
+        public DbSet<BarEntity> Bar { get; set; }
+        //public ModuleDbContext()
+        //{
 
-            var t = true;
+        //    var t = true;
+        //}
+
+        public ModuleDbContext(DbContextOptions<ModuleDbContext> options) :
+      base(options)
+        {
+            //Nothing special...
         }
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer("Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=Spike20221206A;Integrated Security = True;");
@@ -30,11 +39,9 @@ namespace App.Modules.Example.Data.Storage.Db.EF
             base.OnModelCreating(modelBuilder);
         }
 
-
-        public ModuleDbContext(DbContextOptions<ModuleDbContext> options) :
-      base(options)
+        public override void Dispose()
         {
-            //Nothing special...
+            base.Dispose();
         }
 
     }

@@ -22,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using App.Base.Data.Storage.Db.EF;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using Autofac.Builder;
 
 namespace App.Base.Host.Services.Implementations
 {
@@ -127,7 +128,8 @@ namespace App.Base.Host.Services.Implementations
 
             //Gawd I can be soooo dumb.
             var baseServiceCollection = _serviceProvider.GetService<IServiceCollection>();
-            var clonedServiceCollection = Program.Clone(baseServiceCollection);
+
+            var clonedServiceCollection = baseServiceCollection.CloneIntelligently(_serviceProvider);
 
 
             RegisterNewServicesInNewDIScope(
@@ -143,6 +145,7 @@ namespace App.Base.Host.Services.Implementations
 
 
             string connectionString = _serviceProvider.GetService<IConfiguration>().GetConnectionString("DefaultSqlServer");
+
 
 
             Type? moduleDbContextType =
@@ -181,7 +184,10 @@ namespace App.Base.Host.Services.Implementations
                     parameters: new object[] { clonedServiceCollection, callback, ServiceLifetime.Scoped, ServiceLifetime.Scoped }
                 );
             }
-            var serviceProvider = clonedServiceCollection.BuildServiceProvider();
+            //var sop = new ServiceProviderOptions();
+            
+            var serviceProvider = 
+                clonedServiceCollection.BuildServiceProvider();
 
 
             // Save for later (it's how info is shared with
@@ -190,6 +196,7 @@ namespace App.Base.Host.Services.Implementations
             {
                 Context = context,
                 Assembly = assembly,
+                ServiceCollection = clonedServiceCollection,
                 ServiceProvider = serviceProvider
             };
 

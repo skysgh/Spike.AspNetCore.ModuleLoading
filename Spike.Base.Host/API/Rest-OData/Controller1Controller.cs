@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using App.Base.Data;
 using App.Base.API;
 using App.Base.Shared.Services;
+using App.Base.Data.Storage.Db.EF;
 
 namespace App.Base.Host.API.OData
 {
@@ -11,10 +12,12 @@ namespace App.Base.Host.API.OData
     public class ControllerO1Controller : ODataController
     {
         private IExampleHService _exampleHService;
-        
-        public ControllerO1Controller(IExampleHService exampleSharedService)
+        private readonly AppDbContext _appDbContext;
+
+        public ControllerO1Controller(IExampleHService exampleSharedService, AppDbContext appDbContext)
         {
             _exampleHService = exampleSharedService;
+            _appDbContext = appDbContext;
         }
 
 

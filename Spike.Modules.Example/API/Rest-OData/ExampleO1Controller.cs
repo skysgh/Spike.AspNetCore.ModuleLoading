@@ -10,7 +10,7 @@ using App.Modules.Example.Data.Storage.Db.EF;
 namespace App.Modules.Example.Controllers.OData
 {
     [Route(ModuleApiConstants.Areas.Module.OData.V1.Routing.Controllers.Controller1.Route)]
-    public class ExampleO1Controller : ODataController
+    public class ExampleO1Controller : ODataController, IDisposable
     {
         private readonly ModuleDbContext _moduleDbContext;
 
@@ -30,5 +30,25 @@ namespace App.Modules.Example.Controllers.OData
 
             return FakeDataBuilder.Get();
         }
+
+
+
+        public void Dispose()
+        {
+            // Dispose of unmanaged resources.
+            Dispose(true);
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // free managed resources
+            }
+            // free native resources if there are any.
+        }
     }
 }
+

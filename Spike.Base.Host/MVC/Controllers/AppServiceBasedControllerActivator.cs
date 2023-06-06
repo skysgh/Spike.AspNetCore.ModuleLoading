@@ -30,6 +30,13 @@ namespace App.Base.MVC.Controllers
     /// </remarks>
     public class AppServiceBasedControllerActivator : IControllerActivator
     {
+        private readonly IServiceProvider _serviceProvider;
+
+        public AppServiceBasedControllerActivator(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
         //DefaultHttpControllerActivator
         public object Create(ControllerContext actionContext)
         {
@@ -51,52 +58,43 @@ namespace App.Base.MVC.Controllers
             {
                 return httpController;
             }
-
-
-
-                try
-                {
-                    httpController =
-                    // Go classic/non-DI first time?
-                    Activator
-                    .CreateInstance(controllerType);
-
-                    return httpController;
-                }
-                catch (Exception ex)
+            // Try finding the DI scope associated to the 
+            // Controller:
+            ControllerToScopeDictionaryEntry scopeDictionaryEntry;
+            ControllerTypeToScopeDictionary.Instance.TryGetValue(controllerType, out scopeDictionaryEntry);
+            if (scopeDictionaryEntry == null)
             {
-                // Try finding the DI scope associated to the 
-                // Controller:
-                ControllerToScopeDictionaryEntry scopeDictionaryEntry;
-
-
-                ControllerTypeToScopeDictionary.Instance.TryGetValue(controllerType, out scopeDictionaryEntry);
-                if (scopeDictionaryEntry == null)
-                {
-                    return null;
-                }
-                // Fail to another handler since
-                // we didn't replace ,we added...?
-
-
-                //scopeDictionaryEntry
-                //    // use the module specific autofac child scope
-                //    // to instantiate new controller. 
-                //    // will find module specific services for injection
-                //    // and if not found, will look in original parent
-                //    // one, finding all dependencies.
-                //    .Scope
-                //    .TryResolve(controllerType, out httpController);
-
-                httpController = scopeDictionaryEntry.ServiceProvider.GetService(controllerType);
-
-                return httpController;
+                return null;
             }
+            IServiceProvider moduleServiceProvider = scopeDictionaryEntry.ServiceProvider;
+
+            IServiceScope scope = moduleServiceProvider.CreateScope();
+            IServiceProvider serviceProvider = scope.ServiceProvider;
+            httpController = serviceProvider.GetService(controllerType);
+            actionContext.HttpContext.Items["MODULESCOPE"] = scope;
+            return httpController;
         }
     
         public virtual void Release(ControllerContext context, object controller)
         {
+            IServiceScope scope = context.HttpContext.Items["MODULESCOPE"] as IServiceScope;
+            if (scope != null)
+            {
+                scope.Dispose();
+
+                context.HttpContext.Items.Remove("MODULESCOPE");
+
+               ;
+            }
+            scope = null;
+            //GC.Collect();
+            
+            //long mem = GC.GetTotalMemory(false);
+            //long pinnedObjects = GC.GetGCMemoryInfo().PinnedObjectsCount;
+
+            //Console.WriteLine($"Memorybytes: {mem}, Pinned: {pinnedObjects}");
             // Not sure what to put here yet.
+
         }
     }
 }

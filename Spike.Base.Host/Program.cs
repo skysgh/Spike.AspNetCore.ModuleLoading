@@ -21,6 +21,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using Microsoft.EntityFrameworkCore;
 using App.Base.Data.Storage.Db.EF;
+using App.Base.Services;
+using App.Base.Services.Implementations;
 
 namespace App.ModuleLoadingAndDI
 {
@@ -46,6 +48,7 @@ namespace App.ModuleLoadingAndDI
 
             // Demo of registering at startup some service needed by controllers:
             builder.Services.AddSingleton<IExampleHService, ExampleHService>();
+            builder.Services.AddSingleton<IFooService, FooService>();
 
             RegisterServicesNeededToImport3rdPartyModulesAndTheirControllersAndServices(builder);
 
@@ -199,16 +202,7 @@ namespace App.ModuleLoadingAndDI
             builder.Services.AddSingleton<IActionDescriptorChangeProvider>(AppActionDescriptorChangeProvider.Instance);
         }
 
-        public static IServiceCollection Clone (IServiceCollection source)
-        {
-            var result = new ServiceCollection();
-
-            foreach (var serv in source)
-            {
-                result.Add(serv);
-            }
-            return result;
-        }
+  
 
     }
 }

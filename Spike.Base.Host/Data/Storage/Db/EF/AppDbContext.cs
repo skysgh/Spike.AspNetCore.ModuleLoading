@@ -1,14 +1,38 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using App.Base.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace App.Base.Data.Storage.Db.EF
 {
-    public class AppDbContext : DbContext
+
+    public abstract class AppDbContextBase<T> : DbContext
+        where T : DbContext 
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) :
+        public AppDbContextBase(DbContextOptions<T> options) :
+
               base(options)
         {
             //Nothing special...
         }
+    }
+
+
+        public class AppDbContext : AppDbContextBase<AppDbContext>
+    {
+        private readonly IFooService _fooService;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, IFooService fooService) :
+
+              base(options)
+        {
+            _fooService = fooService;
+
+            fooService.Do();
+            //Nothing special...
+        }
+
+        //public AppDbContext(DbContextOptions dbContext):
+        //    base(dbContext)
+        //{ }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
